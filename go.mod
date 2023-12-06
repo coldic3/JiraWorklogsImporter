@@ -1,4 +1,4 @@
-module WorklogSync
+module JiraWorklogsImporter
 
 go 1.21
 

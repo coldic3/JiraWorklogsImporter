@@ -1,7 +1,7 @@
 package main
 
 import (
-	"WorklogSync/app"
+	"JiraWorklogsImporter/app"
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
