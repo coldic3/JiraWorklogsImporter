@@ -67,7 +67,7 @@ func main() {
 		return
 	}
 
-	for _, record := range records {
+	for recordNo, record := range records {
 		description := record[0]
 		durationString := record[1]
 		dateString := record[2]
@@ -151,7 +151,11 @@ func main() {
 			return
 		}
 
-		fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
+		if resp.StatusCode == 201 {
+			fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
+		} else {
+			fmt.Printf("\033[1;31mERROR!\u001B[0m Record no %d has not been imported.\n", recordNo+1)
+		}
 	}
 }
 
