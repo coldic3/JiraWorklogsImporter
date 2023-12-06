@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
+	"regexp"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -55,104 +55,116 @@ func main() {
 		return
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-
 	// Fetching default values from environment variables
 	domain := os.Getenv("ATLASSIAN_DOMAIN")
 	email := os.Getenv("EMAIL")
 	apiToken := os.Getenv("API_TOKEN")
-	defaultIssueIdOrKey := os.Getenv("DEFAULT_ISSUE_ID_OR_KEY")
-	defaultContentText := os.Getenv("DEFAULT_CONTENT_TEXT")
-	defaultDateString := os.Getenv("DEFAULT_DATE_STRING")
-	defaultDurationString := os.Getenv("DEFAULT_DURATION_STRING")
 
-	// Prompt for input with defaults
-	issueIdOrKey := promptWithDefault(reader, "Enter issue ID or key: ", defaultIssueIdOrKey)
-	contentText := promptWithDefault(reader, "Enter content text: ", defaultContentText)
-	dateString := promptWithDefault(reader, "Enter date (DD.MM.YYYY): ", defaultDateString)
-	durationString := promptWithDefault(reader, "Enter time duration (e.g., 1h 30m, 45m, 8h): ", defaultDurationString)
-
-	// Convert date to the required format
-	started, err := formatDate(dateString)
+	csvFilePath := "import_me.csv"
+	records, err := readCSVFile(csvFilePath)
 	if err != nil {
-		fmt.Println("Error in date formatting:", err)
+		fmt.Println("Error reading CSV file:", err)
 		return
 	}
 
-	// Convert duration to seconds
-	timeSpentSeconds, err := parseDuration(durationString)
-	if err != nil {
-		fmt.Println("Error in parsing duration:", err)
-		return
-	}
+	for _, record := range records {
+		description := record[0]
+		durationString := record[1]
+		dateString := record[2]
 
-	// Create the URL
-	url := fmt.Sprintf("https://%s.atlassian.net/rest/api/3/issue/%s/worklog", domain, issueIdOrKey)
+		// Extract issueIdOrKey and contentText from description
+		re := regexp.MustCompile(`^(.*?)\s*(?:\((.*?)\))?$`)
+		matches := re.FindStringSubmatch(description)
+		if len(matches) < 3 {
+			fmt.Println("Invalid record format:", description)
+			continue
+		}
+		issueIdOrKey := matches[1]
+		contentText := matches[2]
 
-	// Set up the payload
-	payload := Payload{}
-	payload.Comment.Content = []struct {
-		Content []struct {
-			Text string `json:"text"`
-			Type string `json:"type"`
-		} `json:"content"`
-		Type string `json:"type"`
-	}{
-		{
-			Content: []struct {
+		// Convert date to the required format
+		started, err := formatDate(dateString)
+		if err != nil {
+			fmt.Println("Error in date formatting:", err)
+			return
+		}
+
+		// Convert duration to seconds
+		timeSpentSeconds, err := parseDuration(durationString)
+		if err != nil {
+			fmt.Println("Error in parsing duration:", err)
+			return
+		}
+
+		// Create the URL
+		url := fmt.Sprintf("https://%s.atlassian.net/rest/api/3/issue/%s/worklog", domain, issueIdOrKey)
+
+		// Set up the payload
+		payload := Payload{}
+		payload.Comment.Content = []struct {
+			Content []struct {
 				Text string `json:"text"`
 				Type string `json:"type"`
-			}{
-				{
-					Text: contentText,
-					Type: "text",
+			} `json:"content"`
+			Type string `json:"type"`
+		}{
+			{
+				Content: []struct {
+					Text string `json:"text"`
+					Type string `json:"type"`
+				}{
+					{
+						Text: contentText,
+						Type: "text",
+					},
 				},
+				Type: "paragraph",
 			},
-			Type: "paragraph",
-		},
+		}
+		payload.Comment.Type = "doc"
+		payload.Comment.Version = 1
+		payload.Started = started
+		payload.TimeSpentSeconds = timeSpentSeconds
+
+		jsonPayload, _ := json.Marshal(payload)
+
+		// Perform the request
+		client := &http.Client{}
+		resp, err := makeRequest(client, url, email, apiToken, jsonPayload)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+
+		// Read and print the response
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		var prettyJson bytes.Buffer
+		prettyJsonError := json.Indent(&prettyJson, body, "", "    ")
+		if prettyJsonError != nil {
+			fmt.Println("JSON parse prettyJsonError: ", prettyJsonError)
+			return
+		}
+
+		fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
 	}
-	payload.Comment.Type = "doc"
-	payload.Comment.Version = 1
-	payload.Started = started
-	payload.TimeSpentSeconds = timeSpentSeconds
-
-	jsonPayload, _ := json.Marshal(payload)
-
-	// Perform the request
-	client := &http.Client{}
-	resp, err := makeRequest(client, url, email, apiToken, jsonPayload)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read and print the response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	var prettyJson bytes.Buffer
-	prettyJsonError := json.Indent(&prettyJson, body, "", "    ")
-	if prettyJsonError != nil {
-		fmt.Println("JSON parse prettyJsonError: ", prettyJsonError)
-		return
-	}
-
-	fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
 }
 
-func promptWithDefault(reader *bufio.Reader, prompt string, defaultValue string) string {
-	fmt.Print(prompt)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	if input == "" {
-		return defaultValue
+func readCSVFile(filePath string) ([][]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
 	}
-	return input
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Comma = '\t'
+	return reader.ReadAll()
 }
 
 func formatDate(dateStr string) (string, error) {
