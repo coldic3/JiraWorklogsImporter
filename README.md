@@ -18,5 +18,5 @@ cp .env.dist .env
 
 Run:
 ```bash
-go run main.go
+go run main.go --file-path=import_me.csv
 ```
