@@ -1,11 +1,11 @@
-package app
+package http
 
 import (
 	"bytes"
 	"net/http"
 )
 
-func makeRequest(client *http.Client, url string, email string, apiToken string, jsonPayload []byte) (*http.Response, error) {
+func MakeRequest(client *http.Client, url string, email string, apiToken string, jsonPayload []byte) (*http.Response, error) {
 	// Create a new request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {

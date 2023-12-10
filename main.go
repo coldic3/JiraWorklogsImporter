@@ -1,17 +1,18 @@
 package main
 
 import (
-	"JiraWorklogsImporter/app"
+	"JiraWorklogsImporter/importer"
+	"JiraWorklogsImporter/importer/toggl"
+	"JiraWorklogsImporter/jira"
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
-	"regexp"
 )
 
 func main() {
 	var csvFilePathToImport string
-	flag.StringVar(&csvFilePathToImport, "file-path", "", "CSV file path to import")
+	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import")
 	flag.Parse()
 
 	err := godotenv.Load()
@@ -20,46 +21,38 @@ func main() {
 		return
 	}
 
-	// Fetching default values from environment variables
 	domain := os.Getenv("ATLASSIAN_DOMAIN")
 	email := os.Getenv("EMAIL")
 	apiToken := os.Getenv("API_TOKEN")
 
-	records, err := app.ReadCSVFile(csvFilePathToImport)
+	records, err := importer.ReadCSVFile(csvFilePathToImport)
 	if err != nil {
 		fmt.Println("Error reading CSV file:", err)
 		return
 	}
 
 	for recordNo, record := range records {
-		description := record[0]
-		durationString := record[1]
-		dateString := record[2]
-
-		// Extract issueIdOrKey and contentText from description
-		re := regexp.MustCompile(`^(.*?)\s*(?:\((.*?)\))?$`)
-		matches := re.FindStringSubmatch(description)
-		if len(matches) < 3 {
-			fmt.Println("Invalid record format:", description)
+		// Skip headers
+		if recordNo == 0 {
 			continue
 		}
-		issueIdOrKey := matches[1]
-		contentText := matches[2]
 
-		// Convert date to the required format
-		started, err := app.FormatDate(dateString)
+		description := record[5]
+		durationString := record[11]
+		startedAtDate := record[7]
+
+		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description)
 		if err != nil {
-			fmt.Println("Error in date formatting:", err)
-			return
+			fmt.Println(fmt.Sprintln(err))
+			continue
 		}
 
-		// Convert duration to seconds
-		timeSpentSeconds, err := app.ParseDuration(durationString)
+		timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
 		if err != nil {
-			fmt.Println("Error in parsing duration:", err)
-			return
+			fmt.Println(fmt.Sprintln(err))
+			continue
 		}
 
-		app.ImportWorkLog(domain, email, apiToken, issueIdOrKey, contentText, started, timeSpentSeconds, recordNo)
+		jira.ImportWorkLog(domain, email, apiToken, issueIdOrKey, contentText, startedAtDate, timeSpentSeconds, recordNo)
 	}
 }

@@ -1,4 +1,4 @@
-package app
+package importer
 
 import (
 	"encoding/csv"
@@ -20,6 +20,6 @@ func ReadCSVFile(filePath string) ([][]string, error) {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	reader.Comma = '\t'
+	reader.Comma = ','
 	return reader.ReadAll()
 }

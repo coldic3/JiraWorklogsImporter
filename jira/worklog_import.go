@@ -1,6 +1,7 @@
-package app
+package jira
 
 import (
+	apphttp "JiraWorklogsImporter/http"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -43,7 +44,7 @@ func ImportWorkLog(domain string, email string, apiToken string, issueIdOrKey st
 
 	// Perform the request
 	client := &http.Client{}
-	resp, err := makeRequest(client, url, email, apiToken, jsonPayload)
+	resp, err := apphttp.MakeRequest(client, url, email, apiToken, jsonPayload)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -67,6 +68,6 @@ func ImportWorkLog(domain string, email string, apiToken string, issueIdOrKey st
 	if resp.StatusCode == 201 {
 		fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
 	} else {
-		fmt.Printf("\033[1;31mERROR!\u001B[0m Record no %d has not been imported.\n", recordNo+1)
+		fmt.Printf("\033[1;31mERROR!\u001B[0m Record no %d has not been imported.\n", recordNo)
 	}
 }

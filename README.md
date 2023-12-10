@@ -2,6 +2,8 @@
 
 Use this simple CLI app to import your work logs into the [Worklogs](https://marketplace.atlassian.com/apps/1219004/worklogs-time-tracking-and-reports) Jira app.
 
+For now, the only import file supported is an export file from a [Toggl](https://toggl.com) app. See [toggl_sample_export.csv](toggl_sample_export.csv) file.
+
 ## Setup
 
 1. Create the `.env` file:
@@ -18,5 +20,5 @@ cp .env.dist .env
 
 Run:
 ```bash
-go run main.go --file-path=import_me.csv
+go run main.go --import=toggl_sample_export.csv
 ```
