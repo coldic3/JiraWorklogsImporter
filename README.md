@@ -19,6 +19,6 @@ cp .env.dist .env
 ## Usage
 
 Run:
-```bash
-go run main.go --import=toggl_sample_export.csv
+```
+./bin/jira-worklogs-importer --import=toggl_sample_export.csv
 ```
