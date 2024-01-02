@@ -39,7 +39,12 @@ func main() {
 
 		description := record[5]
 		durationString := record[11]
-		startedAtDate := record[7]
+
+		startedAtDateTime, err := toggl.ConvertDateFormat(record[7] + " " + record[8])
+		if err != nil {
+			fmt.Println(fmt.Sprintln(err))
+			continue
+		}
 
 		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description)
 		if err != nil {
@@ -53,6 +58,6 @@ func main() {
 			continue
 		}
 
-		jira.ImportWorkLog(domain, email, apiToken, issueIdOrKey, contentText, startedAtDate, timeSpentSeconds, recordNo)
+		jira.ImportWorkLog(domain, email, apiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
 	}
 }
