@@ -68,6 +68,13 @@ func ImportWorkLog(domain string, email string, apiToken string, issueIdOrKey st
 	if resp.StatusCode == 201 {
 		fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
 	} else {
+		defer resp.Body.Close()
+
 		fmt.Printf("\033[1;31mERROR!\u001B[0m Record no %d has not been imported.\n", recordNo)
+
+		body, _ := io.ReadAll(resp.Body)
+		if len(body) > 0 {
+			fmt.Println(string(body))
+		}
 	}
 }
