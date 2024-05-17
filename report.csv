@@ -1,0 +1,10 @@
+User,Email,Client,Project,Task,Description,Billable,Start date,Start time,End date,End time,Duration,Tags,Amount (PLN)
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-46 (review),Yes,2024-05-15,07:45:00,2024-05-15,08:00:00,00:15:00,,50.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-151 (review),Yes,2024-05-15,08:00:00,2024-05-15,08:15:00,00:15:00,,50.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-43,Yes,2024-05-15,08:15:00,2024-05-15,10:00:00,01:45:00,,350.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-43,Yes,2024-05-15,10:30:00,2024-05-15,12:00:00,01:30:00,,300.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-148 (QA),Yes,2024-05-15,12:00:00,2024-05-15,12:30:00,00:30:00,,100.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-148 (naprawa konfliktów i failujących testów),Yes,2024-05-15,12:30:00,2024-05-15,13:00:00,00:30:00,,100.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-4 (retro),Yes,2024-05-15,13:00:00,2024-05-15,14:00:00,01:00:00,,200.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-4 (refinement),Yes,2024-05-15,14:00:00,2024-05-15,15:00:00,01:00:00,,200.00
+Kevin Kaniaburka,kevin.kaniaburka@commerceweavers.com,Katalog Marzeń,Katalog Marzeń PoC,,ECOM-43,Yes,2024-05-15,15:30:00,2024-05-15,16:15:00,00:45:00,,150.00

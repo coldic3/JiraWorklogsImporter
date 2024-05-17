@@ -2,8 +2,8 @@ package main
 
 import (
 	"JiraWorklogsImporter/importer"
-	"JiraWorklogsImporter/importer/toggl"
 	"JiraWorklogsImporter/jira"
+	"JiraWorklogsImporter/toggl"
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -11,9 +11,25 @@ import (
 )
 
 func main() {
+	var records [][]string
 	var csvFilePathToImport string
+	var since string
+	var until string
+
 	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import")
+	flag.StringVar(&since, "since", "", "Import work logs since date")
+	flag.StringVar(&until, "until", "", "Import work logs until date")
 	flag.Parse()
+
+	if since == "" {
+		fmt.Println("Missing since option")
+		return
+	}
+
+	if until == "" {
+		fmt.Println("Missing until option")
+		return
+	}
 
 	err := godotenv.Load()
 	if err != nil {
@@ -21,14 +37,22 @@ func main() {
 		return
 	}
 
-	domain := os.Getenv("ATLASSIAN_DOMAIN")
-	email := os.Getenv("EMAIL")
-	apiToken := os.Getenv("API_TOKEN")
+	atlassianDomain := os.Getenv("ATLASSIAN_DOMAIN")
+	atlassianEmail := os.Getenv("ATLASSIAN_EMAIL")
+	atlassianApiToken := os.Getenv("ATLASSIAN_API_TOKEN")
+	togglApiToken := os.Getenv("TOGGL_API_TOKEN")
+	togglUserId := os.Getenv("TOGGL_USER_ID")
+	togglClientId := os.Getenv("TOGGL_CLIENT_ID")
+	togglWorkspaceId := os.Getenv("TOGGL_WORKSPACE_ID")
 
-	records, err := importer.ReadCSVFile(csvFilePathToImport)
-	if err != nil {
-		fmt.Println("Error reading CSV file:", err)
-		return
+	if csvFilePathToImport != "" {
+		records, err = importer.ReadCSVFile(csvFilePathToImport)
+		if err != nil {
+			fmt.Println("Error reading CSV file:", err)
+			return
+		}
+	} else {
+		records, err = toggl.ExportWorkLogs(togglApiToken, togglUserId, togglClientId, togglWorkspaceId, since, until)
 	}
 
 	for recordNo, record := range records {
@@ -58,6 +82,6 @@ func main() {
 			continue
 		}
 
-		jira.ImportWorkLog(domain, email, apiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
+		jira.ImportWorkLog(atlassianDomain, atlassianEmail, atlassianApiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
 	}
 }

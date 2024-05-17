@@ -44,14 +44,13 @@ func ImportWorkLog(domain string, email string, apiToken string, issueIdOrKey st
 
 	// Perform the request
 	client := &http.Client{}
-	resp, err := apphttp.MakeRequest(client, url, email, apiToken, jsonPayload)
+	resp, err := apphttp.MakeRequest(client, "POST", url, email, apiToken, jsonPayload)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer resp.Body.Close()
 
-	// Read and print the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
