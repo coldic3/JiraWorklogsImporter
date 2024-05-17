@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
+	"strings"
+	"text/tabwriter"
 )
 
 func main() {
@@ -15,25 +17,39 @@ func main() {
 	var csvFilePathToImport string
 	var since string
 	var until string
-
-	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import")
-	flag.StringVar(&since, "since", "", "Import work logs since date")
-	flag.StringVar(&until, "until", "", "Import work logs until date")
-	flag.Parse()
-
-	if since == "" {
-		fmt.Println("Missing since option")
-		return
-	}
-
-	if until == "" {
-		fmt.Println("Missing until option")
-		return
-	}
+	var dryRun bool
 
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Error loading .env file")
+		fmt.Println("Error loading .env file.")
+		return
+	}
+
+	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import.")
+	flag.StringVar(&since, "since", "", "Import work logs since date.")
+	flag.StringVar(&until, "until", "", "Import work logs until date.")
+	flag.BoolVar(&dryRun, "dry-run", false, "Dry run. Export work logs but do not import.")
+	flag.Parse()
+
+	optionsValidationFailed := false
+
+	if since == "" {
+		fmt.Println("Missing since option.")
+		optionsValidationFailed = true
+	} else if !toggl.CheckDateFormat(since) {
+		fmt.Println("Invalid since option. The date must be in YYYY-MM-DD format.")
+		optionsValidationFailed = true
+	}
+
+	if until == "" {
+		fmt.Println("Missing until option.")
+		optionsValidationFailed = true
+	} else if !toggl.CheckDateFormat(until) {
+		fmt.Println("Invalid until option. The date must be in YYYY-MM-DD format.")
+		optionsValidationFailed = true
+	}
+
+	if optionsValidationFailed {
 		return
 	}
 
@@ -55,7 +71,14 @@ func main() {
 		records, err = toggl.ExportWorkLogs(togglApiToken, togglUserId, togglClientId, togglWorkspaceId, since, until)
 	}
 
+	tableWriter := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
+
 	for recordNo, record := range records {
+		if dryRun {
+			fmt.Fprintln(tableWriter, strings.Join(record, "\t"))
+			continue
+		}
+
 		// Skip headers
 		if recordNo == 0 {
 			continue
@@ -84,4 +107,6 @@ func main() {
 
 		jira.ImportWorkLog(atlassianDomain, atlassianEmail, atlassianApiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
 	}
+
+	tableWriter.Flush()
 }

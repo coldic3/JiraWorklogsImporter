@@ -32,6 +32,12 @@ func ConvertDateFormat(date string) (string, error) {
 	return parsedTime.Format("2006-01-02T15:04:05.000") + "+" + timeZone, nil
 }
 
+func CheckDateFormat(date string) bool {
+	_, err := time.Parse("2006-01-02", date)
+
+	return err == nil
+}
+
 func ConvertToIssueIdAndContextText(text string) (string, string, error) {
 	re := regexp.MustCompile(`^(.*?)\s*(?:\((.*?)\))?$`)
 	matches := re.FindStringSubmatch(text)
