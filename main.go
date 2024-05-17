@@ -26,8 +26,8 @@ func main() {
 	}
 
 	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import.")
-	flag.StringVar(&since, "since", "", "Import work logs since date.")
-	flag.StringVar(&until, "until", "", "Import work logs until date.")
+	flag.StringVar(&since, "since", "", "Import work logs since date. Format YYYY-MM-DD.")
+	flag.StringVar(&until, "until", "", "Import work logs until date. Format YYYY-MM-DD.")
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run. Export work logs but do not import.")
 	flag.Parse()
 
