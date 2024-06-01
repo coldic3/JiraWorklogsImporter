@@ -38,8 +38,8 @@ func CheckDateFormat(date string) bool {
 	return err == nil
 }
 
-func ConvertToIssueIdAndContextText(text string) (string, string, error) {
-	re := regexp.MustCompile(`^(.*?)\s*(?:\((.*?)\))?$`)
+func ConvertToIssueIdAndContextText(text string, regex string) (string, string, error) {
+	re := regexp.MustCompile(regex)
 	matches := re.FindStringSubmatch(text)
 
 	if len(matches) < 3 {

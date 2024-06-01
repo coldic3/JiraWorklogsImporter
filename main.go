@@ -60,6 +60,10 @@ func main() {
 	togglUserId := os.Getenv("TOGGL_USER_ID")
 	togglClientId := os.Getenv("TOGGL_CLIENT_ID")
 	togglWorkspaceId := os.Getenv("TOGGL_WORKSPACE_ID")
+	descriptionRegex, exists := os.LookupEnv("DESCRIPTION_REGEX")
+	if !exists {
+		descriptionRegex = `^(.*?)\s*(?:\((.*?)\))?$`
+	}
 
 	if csvFilePathToImport != "" {
 		records, err = importer.ReadCSVFile(csvFilePathToImport)
@@ -93,7 +97,7 @@ func main() {
 			continue
 		}
 
-		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description)
+		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
 		if err != nil {
 			fmt.Println(fmt.Sprintln(err))
 			continue
