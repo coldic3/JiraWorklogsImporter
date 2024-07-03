@@ -13,23 +13,33 @@ import (
 )
 
 func main() {
+	var project string
 	var records [][]string
 	var csvFilePathToImport string
 	var since string
 	var until string
 	var dryRun bool
 
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file.")
-		return
-	}
-
+	flag.StringVar(&project, "project", "", "A project name that will load .env.<project-name> file.")
 	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import.")
 	flag.StringVar(&since, "since", "", "Import work logs since date. Format YYYY-MM-DD.")
 	flag.StringVar(&until, "until", "", "Import work logs until date. Format YYYY-MM-DD.")
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run. Export work logs but do not import.")
 	flag.Parse()
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("Error loading .env file.")
+		return
+	}
+	if project != "" {
+		projectEnv := fmt.Sprintf(".env.%s", project)
+		err = godotenv.Load(projectEnv)
+		if err != nil {
+			fmt.Printf("Error loading %s file.\n", projectEnv)
+			return
+		}
+	}
 
 	optionsValidationFailed := false
 

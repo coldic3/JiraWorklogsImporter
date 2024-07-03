@@ -8,6 +8,8 @@ The import file supported is an export file from a [Toggl](https://toggl.com) ap
 
 ## Setup
 
+### Basic setup for a single project
+
 1. Create the `.env` file:
 ```bash
 cp .env.dist .env
@@ -25,6 +27,25 @@ Env variables prefixed with `TOGGL_` are optional if you use an `--import` optio
 * `TOGGL_USER_ID`: Your user ID in Toggl.
 * `TOGGL_CLIENT_ID`: The client ID in Toggl from whom you want to export your work logs.
 * `TOGGL_WORKSPACE_ID`: Your workspace ID in Toggl from whom you want to export your work logs.
+
+### Advanced setup for many project
+
+A very common case is that you want to import your worklogs into different Jira accounts from different Toggle accounts
+depending on the project. You can handle it with the `--project` option! We will consider two cases.
+
+#### CASE 1: One Toggl account and many Jira accounts
+
+In this case, you most likely work on many Jira projects and want to import all from your one Toggl account where you
+log everything. Let's say you work on two projects `sylius` and `symfony`. In your `.env` define common env variables so
+all prefixed with `TOGGL_`. In `.env.sylius` and `.env.symfony` specify env variables specific for your Jira account so
+prefixed with `ATLASSIAN_`. Now, if you run the command with `--project="symfony"`, files `.env` and `.env.symfony` will
+be used.
+
+#### CASE 2: A different Toggl account and Jira account for each project
+
+Similar to the case above but you leave `.env` empty. Instead of that file, you define all env vars right in
+`.env.<your-project-name>`.
+
 
 ## Usage
 
