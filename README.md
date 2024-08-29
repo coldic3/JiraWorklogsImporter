@@ -59,8 +59,6 @@ Import from file:
 ./bin/jira-worklogs-importer --import=toggl_sample_export.csv
 ```
 
-Use `--dry-run` option to see the export before being imported.
-
 By default, it takes description from Toggl / CSV file and combines it into Jira issue key and work log description.
 Therefore, your descriptions should follow the pattern [^(.*?)\s*(?:\((.*?)\))?$](https://regex101.com/r/YUvRCq/1). For
 example these are valid descriptions: `XYZ-8 (resolving conflicts in the PR)`, `XYZ-8`.
