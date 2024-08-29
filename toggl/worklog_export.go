@@ -63,5 +63,6 @@ func ExportWorkLogs(apiToken string, userId string, clientId string, workspaceId
 
 	reader := csv.NewReader(strings.NewReader(string(body)))
 	reader.Comma = ','
+	reader.LazyQuotes = true
 	return reader.ReadAll()
 }

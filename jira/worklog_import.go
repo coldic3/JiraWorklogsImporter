@@ -65,7 +65,7 @@ func ImportWorkLog(domain string, email string, apiToken string, issueIdOrKey st
 	}
 
 	if resp.StatusCode == 201 {
-		fmt.Println("\033[1;32mTIME LOGGED!\033[0m")
+		fmt.Printf("\033[1;32mTIME LOGGED!\033[0m Issue %s at %s has been imported.\n", issueIdOrKey, date)
 	} else {
 		defer resp.Body.Close()
 
