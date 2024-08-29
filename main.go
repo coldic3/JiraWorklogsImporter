@@ -4,6 +4,7 @@ import (
 	"JiraWorklogsImporter/importer"
 	"JiraWorklogsImporter/jira"
 	"JiraWorklogsImporter/toggl"
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -18,13 +19,14 @@ func main() {
 	var csvFilePathToImport string
 	var since string
 	var until string
-	var dryRun bool
+	var nonInteractive bool
 
 	flag.StringVar(&project, "project", "", "A project name that will load .env.<project-name> file.")
 	flag.StringVar(&csvFilePathToImport, "import", "", "CSV file path to import.")
 	flag.StringVar(&since, "since", "", "Import work logs since date. Format YYYY-MM-DD.")
 	flag.StringVar(&until, "until", "", "Import work logs until date. Format YYYY-MM-DD.")
-	flag.BoolVar(&dryRun, "dry-run", false, "Dry run. Export work logs but do not import.")
+	flag.BoolVar(&nonInteractive, "non-interactive", false, "Non-interactive mode.")
+	flag.BoolVar(&nonInteractive, "n", false, "An alias of --non-interactive.")
 	flag.Parse()
 
 	err := godotenv.Load(".env")
@@ -87,12 +89,31 @@ func main() {
 
 	tableWriter := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
 
-	for recordNo, record := range records {
-		if dryRun {
-			fmt.Fprintln(tableWriter, strings.Join(record, "\t"))
-			continue
+	for _, record := range records {
+		fmt.Fprintln(tableWriter, strings.Join(record, "\t"))
+	}
+
+	tableWriter.Flush()
+
+	if nonInteractive == false {
+		fmt.Print("Please confirm the import [y/N]: ")
+		reader := bufio.NewReader(os.Stdin)
+
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("An error occurred while reading the input. Please try again.", err)
+			return
 		}
 
+		input = strings.TrimSpace(strings.ToLower(input))
+		confirmed := input == "y"
+
+		if confirmed == false {
+			return
+		}
+	}
+
+	for recordNo, record := range records {
 		// Skip headers
 		if recordNo == 0 {
 			continue
