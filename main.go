@@ -1,6 +1,8 @@
 package main
 
 import (
+	"JiraWorklogsImporter/clockify"
+	"JiraWorklogsImporter/converter"
 	"JiraWorklogsImporter/importer"
 	"JiraWorklogsImporter/jira"
 	"JiraWorklogsImporter/toggl"
@@ -9,6 +11,7 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 )
@@ -68,14 +71,6 @@ func main() {
 	atlassianDomain := os.Getenv("ATLASSIAN_DOMAIN")
 	atlassianEmail := os.Getenv("ATLASSIAN_EMAIL")
 	atlassianApiToken := os.Getenv("ATLASSIAN_API_TOKEN")
-	togglApiToken := os.Getenv("TOGGL_API_TOKEN")
-	togglUserId := os.Getenv("TOGGL_USER_ID")
-	togglClientId := os.Getenv("TOGGL_CLIENT_ID")
-	togglWorkspaceId := os.Getenv("TOGGL_WORKSPACE_ID")
-	descriptionRegex, exists := os.LookupEnv("DESCRIPTION_REGEX")
-	if !exists {
-		descriptionRegex = `^(.*?)\s*(?:\((.*?)\))?$`
-	}
 
 	if csvFilePathToImport != "" {
 		records, err = importer.ReadCSVFile(csvFilePathToImport)
@@ -84,7 +79,14 @@ func main() {
 			return
 		}
 	} else {
-		records, err = toggl.ExportWorkLogs(togglApiToken, togglUserId, togglClientId, togglWorkspaceId, since, until)
+		if os.Getenv("TOGGL_API_TOKEN") != "" {
+			records, err = toggl.ExportWorkLogs(os.Getenv("TOGGL_API_TOKEN"), os.Getenv("TOGGL_USER_ID"), os.Getenv("TOGGL_CLIENT_ID"), os.Getenv("TOGGL_WORKSPACE_ID"), since, until)
+		} else if os.Getenv("CLOCKIFY_API_TOKEN") != "" {
+			records, err = clockify.ExportWorkLogs(os.Getenv("CLOCKIFY_API_TOKEN"), os.Getenv("CLOCKIFY_USER_ID"), os.Getenv("CLOCKIFY_PROJECT_ID"), os.Getenv("CLOCKIFY_WORKSPACE_ID"), since, until)
+		} else {
+			fmt.Println("No valid API token found for Toggl or Clockify.")
+			return
+		}
 	}
 
 	tableWriter := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
@@ -119,24 +121,26 @@ func main() {
 			continue
 		}
 
-		description := record[5]
-		durationString := record[11]
-
-		startedAtDateTime, err := toggl.ConvertDateFormat(record[7] + " " + record[8])
+		factory := converter.NewConverterFactory()
+		supportedConverter, err := factory.GetConverter("clockify_to_jira")
 		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
+			fmt.Println(err)
 			continue
 		}
-
-		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
+		convertedRecord, err := supportedConverter.Convert(record)
 		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
+			fmt.Println(err)
 			continue
 		}
-
-		timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
+		fields := strings.Split(convertedRecord, ",")
+		if len(fields) != 4 {
+			fmt.Println("Invalid record format")
+			continue
+		}
+		issueIdOrKey, contentText, startedAtDateTime := fields[0], fields[1], fields[2]
+		timeSpentSeconds, err := strconv.Atoi(fields[3])
 		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
+			fmt.Println("Error converting timeSpentSeconds:", err)
 			continue
 		}
 
