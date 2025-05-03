@@ -39,5 +39,5 @@ func (c *TogglToJiraConverter) Convert(record []string) (ConvertedRecord, error)
 }
 
 func (c *TogglToJiraConverter) Supports(strategy string) bool {
-	return strategy == "toggl_to_jira"
+	return strategy == "toggl_to_jira" || strategy == "csv_to_jira"
 }

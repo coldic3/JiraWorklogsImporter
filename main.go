@@ -74,38 +74,41 @@ func main() {
 
 	importStrategy, exists := os.LookupEnv("IMPORT_STRATEGY")
 	if !exists {
-		importStrategy = "toggl_to_jira"
+		importStrategy = "csv_to_jira"
 	}
 
-	if csvFilePathToImport != "" {
+	if importStrategy == "csv_to_jira" {
+		if csvFilePathToImport == "" {
+			fmt.Println("The CSV file is not provided. Use --import option.", err)
+			return
+		}
+
 		records, err = importer.ReadCSVFile(csvFilePathToImport)
 		if err != nil {
 			fmt.Println("Error reading CSV file:", err)
 			return
 		}
+	} else if importStrategy == "toggl_to_jira" {
+		records, err = toggl.ExportWorkLogs(
+			os.Getenv("TOGGL_API_TOKEN"),
+			os.Getenv("TOGGL_USER_ID"),
+			os.Getenv("TOGGL_CLIENT_ID"),
+			os.Getenv("TOGGL_WORKSPACE_ID"),
+			since,
+			until,
+		)
+	} else if importStrategy == "clockify_to_jira" {
+		records, err = clockify.ExportWorkLogs(
+			os.Getenv("CLOCKIFY_API_TOKEN"),
+			os.Getenv("CLOCKIFY_USER_ID"),
+			os.Getenv("CLOCKIFY_PROJECT_ID"),
+			os.Getenv("CLOCKIFY_WORKSPACE_ID"),
+			since,
+			until,
+		)
 	} else {
-		if importStrategy == "toggl_to_jira" {
-			records, err = toggl.ExportWorkLogs(
-				os.Getenv("TOGGL_API_TOKEN"),
-				os.Getenv("TOGGL_USER_ID"),
-				os.Getenv("TOGGL_CLIENT_ID"),
-				os.Getenv("TOGGL_WORKSPACE_ID"),
-				since,
-				until,
-			)
-		} else if importStrategy == "clockify_to_jira" {
-			records, err = clockify.ExportWorkLogs(
-				os.Getenv("CLOCKIFY_API_TOKEN"),
-				os.Getenv("CLOCKIFY_USER_ID"),
-				os.Getenv("CLOCKIFY_PROJECT_ID"),
-				os.Getenv("CLOCKIFY_WORKSPACE_ID"),
-				since,
-				until,
-			)
-		} else {
-			fmt.Println("The given import strategy is not supported.")
-			return
-		}
+		fmt.Println("The given import strategy is not supported.")
+		return
 	}
 
 	tableWriter := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
