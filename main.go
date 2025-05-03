@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 )
@@ -72,6 +71,11 @@ func main() {
 	atlassianEmail := os.Getenv("ATLASSIAN_EMAIL")
 	atlassianApiToken := os.Getenv("ATLASSIAN_API_TOKEN")
 
+	importStrategy, exists := os.LookupEnv("IMPORT_STRATEGY")
+	if !exists {
+		importStrategy = "toggl_to_jira"
+	}
+
 	if csvFilePathToImport != "" {
 		records, err = importer.ReadCSVFile(csvFilePathToImport)
 		if err != nil {
@@ -79,12 +83,26 @@ func main() {
 			return
 		}
 	} else {
-		if os.Getenv("TOGGL_API_TOKEN") != "" {
-			records, err = toggl.ExportWorkLogs(os.Getenv("TOGGL_API_TOKEN"), os.Getenv("TOGGL_USER_ID"), os.Getenv("TOGGL_CLIENT_ID"), os.Getenv("TOGGL_WORKSPACE_ID"), since, until)
-		} else if os.Getenv("CLOCKIFY_API_TOKEN") != "" {
-			records, err = clockify.ExportWorkLogs(os.Getenv("CLOCKIFY_API_TOKEN"), os.Getenv("CLOCKIFY_USER_ID"), os.Getenv("CLOCKIFY_PROJECT_ID"), os.Getenv("CLOCKIFY_WORKSPACE_ID"), since, until)
+		if importStrategy == "toggl_to_jira" {
+			records, err = toggl.ExportWorkLogs(
+				os.Getenv("TOGGL_API_TOKEN"),
+				os.Getenv("TOGGL_USER_ID"),
+				os.Getenv("TOGGL_CLIENT_ID"),
+				os.Getenv("TOGGL_WORKSPACE_ID"),
+				since,
+				until,
+			)
+		} else if importStrategy == "clockify_to_jira" {
+			records, err = clockify.ExportWorkLogs(
+				os.Getenv("CLOCKIFY_API_TOKEN"),
+				os.Getenv("CLOCKIFY_USER_ID"),
+				os.Getenv("CLOCKIFY_PROJECT_ID"),
+				os.Getenv("CLOCKIFY_WORKSPACE_ID"),
+				since,
+				until,
+			)
 		} else {
-			fmt.Println("No valid API token found for Toggl or Clockify.")
+			fmt.Println("The given import strategy is not supported.")
 			return
 		}
 	}
@@ -122,7 +140,7 @@ func main() {
 		}
 
 		factory := converter.NewConverterFactory()
-		supportedConverter, err := factory.GetConverter("clockify_to_jira")
+		supportedConverter, err := factory.GetConverter(importStrategy)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -132,19 +150,17 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		fields := strings.Split(convertedRecord, ",")
-		if len(fields) != 4 {
-			fmt.Println("Invalid record format")
-			continue
-		}
-		issueIdOrKey, contentText, startedAtDateTime := fields[0], fields[1], fields[2]
-		timeSpentSeconds, err := strconv.Atoi(fields[3])
-		if err != nil {
-			fmt.Println("Error converting timeSpentSeconds:", err)
-			continue
-		}
 
-		jira.ImportWorkLog(atlassianDomain, atlassianEmail, atlassianApiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
+		jira.ImportWorkLog(
+			atlassianDomain,
+			atlassianEmail,
+			atlassianApiToken,
+			convertedRecord.IssueIdOrKey,
+			convertedRecord.ContentText,
+			convertedRecord.StartedAtDateTime,
+			convertedRecord.TimeSpentSeconds,
+			recordNo,
+		)
 	}
 
 	tableWriter.Flush()

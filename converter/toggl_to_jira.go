@@ -2,13 +2,12 @@ package converter
 
 import (
 	"JiraWorklogsImporter/toggl"
-	"fmt"
 	"os"
 )
 
 type TogglToJiraConverter struct{}
 
-func (c *TogglToJiraConverter) Convert(record []string) (string, error) {
+func (c *TogglToJiraConverter) Convert(record []string) (ConvertedRecord, error) {
 	descriptionRegex, exists := os.LookupEnv("DESCRIPTION_REGEX")
 	if !exists {
 		descriptionRegex = `^(.*?)\s*(?:\((.*?)\))?$`
@@ -19,22 +18,27 @@ func (c *TogglToJiraConverter) Convert(record []string) (string, error) {
 
 	startedAtDateTime, err := toggl.ConvertDateFormat(record[7] + " " + record[8])
 	if err != nil {
-		return "", err
+		return ConvertedRecord{}, err
 	}
 
 	issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
 	if err != nil {
-		return "", err
+		return ConvertedRecord{}, err
 	}
 
 	timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
 	if err != nil {
-		return "", err
+		return ConvertedRecord{}, err
 	}
 
-	return fmt.Sprintf("%s,%s,%s,%d", issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds), nil
+	return ConvertedRecord{
+		IssueIdOrKey:      issueIdOrKey,
+		ContentText:       contentText,
+		StartedAtDateTime: startedAtDateTime,
+		TimeSpentSeconds:  timeSpentSeconds,
+	}, nil
 }
 
-func (c *TogglToJiraConverter) Supports(format string) bool {
-	return format == "toggl_to_jira"
+func (c *TogglToJiraConverter) Supports(strategy string) bool {
+	return strategy == "toggl_to_jira"
 }
