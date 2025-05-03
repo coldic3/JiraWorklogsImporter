@@ -79,7 +79,7 @@ func main() {
 
 	if importStrategy == "csv_to_jira" {
 		if csvFilePathToImport == "" {
-			fmt.Println("The CSV file is not provided. Use --import option.", err)
+			fmt.Println("The CSV file is not provided. Use --import option.")
 			return
 		}
 
@@ -137,18 +137,19 @@ func main() {
 		}
 	}
 
+	factory := converter.NewConverterFactory()
+	supportedConverter, err := factory.GetConverter(importStrategy)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	for recordNo, record := range records {
 		// Skip headers
 		if recordNo == 0 {
 			continue
 		}
 
-		factory := converter.NewConverterFactory()
-		supportedConverter, err := factory.GetConverter(importStrategy)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
 		convertedRecord, err := supportedConverter.Convert(record)
 		if err != nil {
 			fmt.Println(err)

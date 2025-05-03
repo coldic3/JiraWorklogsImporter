@@ -1,7 +1,6 @@
 package converter
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -36,5 +35,5 @@ func (f *ConverterFactory) GetConverter(strategy string) (Converter, error) {
 			return converter, nil
 		}
 	}
-	return nil, errors.New(fmt.Sprintf("No converter found for strategy: %s.", strategy))
+	return nil, fmt.Errorf("no converter found for strategy: %s", strategy)
 }
