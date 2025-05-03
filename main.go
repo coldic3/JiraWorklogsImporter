@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
 	if since == "" {
 		fmt.Println("Missing since option.")
 		optionsValidationFailed = true
-	} else if !toggl.CheckDateFormat(since) {
+	} else if !checkDateFormat(since) {
 		fmt.Println("Invalid since option. The date must be in YYYY-MM-DD format.")
 		optionsValidationFailed = true
 	}
@@ -58,7 +59,7 @@ func main() {
 	if until == "" {
 		fmt.Println("Missing until option.")
 		optionsValidationFailed = true
-	} else if !toggl.CheckDateFormat(until) {
+	} else if !checkDateFormat(until) {
 		fmt.Println("Invalid until option. The date must be in YYYY-MM-DD format.")
 		optionsValidationFailed = true
 	}
@@ -164,4 +165,10 @@ func main() {
 	}
 
 	tableWriter.Flush()
+}
+
+func checkDateFormat(date string) bool {
+	_, err := time.Parse("2006-01-02", date)
+
+	return err == nil
 }

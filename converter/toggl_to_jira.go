@@ -1,7 +1,6 @@
 package converter
 
 import (
-	"JiraWorklogsImporter/toggl"
 	"os"
 )
 
@@ -16,17 +15,17 @@ func (c *TogglToJiraConverter) Convert(record []string) (ConvertedRecord, error)
 	description := record[5]
 	durationString := record[11]
 
-	startedAtDateTime, err := toggl.ConvertDateFormat(record[7] + " " + record[8])
+	startedAtDateTime, err := ConvertDateFormat(record[7] + " " + record[8])
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
+	issueIdOrKey, contentText, err := ConvertToIssueIdAndContextText(description, descriptionRegex)
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
+	timeSpentSeconds, err := ConvertToSeconds(durationString)
 	if err != nil {
 		return ConvertedRecord{}, err
 	}

@@ -1,7 +1,6 @@
 package converter
 
 import (
-	"JiraWorklogsImporter/toggl"
 	"fmt"
 	"os"
 	"time"
@@ -30,17 +29,17 @@ func (c *ClockifyToJiraConverter) Convert(record []string) (ConvertedRecord, err
 	duration := endTime.Sub(startTime)
 	durationString := fmt.Sprintf("%02d:%02d:%02d", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60)
 
-	startedAtDateTime, err := toggl.ConvertDateFormat(record[1])
+	startedAtDateTime, err := ConvertDateFormat(record[1])
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
+	issueIdOrKey, contentText, err := ConvertToIssueIdAndContextText(description, descriptionRegex)
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
+	timeSpentSeconds, err := ConvertToSeconds(durationString)
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
