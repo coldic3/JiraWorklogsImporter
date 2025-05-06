@@ -1,6 +1,8 @@
 package main
 
 import (
+	"JiraWorklogsImporter/clockify"
+	"JiraWorklogsImporter/converter"
 	"JiraWorklogsImporter/importer"
 	"JiraWorklogsImporter/jira"
 	"JiraWorklogsImporter/toggl"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 func main() {
@@ -48,7 +51,7 @@ func main() {
 	if since == "" {
 		fmt.Println("Missing since option.")
 		optionsValidationFailed = true
-	} else if !toggl.CheckDateFormat(since) {
+	} else if !checkDateFormat(since) {
 		fmt.Println("Invalid since option. The date must be in YYYY-MM-DD format.")
 		optionsValidationFailed = true
 	}
@@ -56,7 +59,7 @@ func main() {
 	if until == "" {
 		fmt.Println("Missing until option.")
 		optionsValidationFailed = true
-	} else if !toggl.CheckDateFormat(until) {
+	} else if !checkDateFormat(until) {
 		fmt.Println("Invalid until option. The date must be in YYYY-MM-DD format.")
 		optionsValidationFailed = true
 	}
@@ -68,23 +71,44 @@ func main() {
 	atlassianDomain := os.Getenv("ATLASSIAN_DOMAIN")
 	atlassianEmail := os.Getenv("ATLASSIAN_EMAIL")
 	atlassianApiToken := os.Getenv("ATLASSIAN_API_TOKEN")
-	togglApiToken := os.Getenv("TOGGL_API_TOKEN")
-	togglUserId := os.Getenv("TOGGL_USER_ID")
-	togglClientId := os.Getenv("TOGGL_CLIENT_ID")
-	togglWorkspaceId := os.Getenv("TOGGL_WORKSPACE_ID")
-	descriptionRegex, exists := os.LookupEnv("DESCRIPTION_REGEX")
+
+	importStrategy, exists := os.LookupEnv("IMPORT_STRATEGY")
 	if !exists {
-		descriptionRegex = `^(.*?)\s*(?:\((.*?)\))?$`
+		importStrategy = "csv_to_jira"
 	}
 
-	if csvFilePathToImport != "" {
+	if importStrategy == "csv_to_jira" {
+		if csvFilePathToImport == "" {
+			fmt.Println("The CSV file is not provided. Use --import option.")
+			return
+		}
+
 		records, err = importer.ReadCSVFile(csvFilePathToImport)
 		if err != nil {
 			fmt.Println("Error reading CSV file:", err)
 			return
 		}
+	} else if importStrategy == "toggl_to_jira" {
+		records, err = toggl.ExportWorkLogs(
+			os.Getenv("TOGGL_API_TOKEN"),
+			os.Getenv("TOGGL_USER_ID"),
+			os.Getenv("TOGGL_CLIENT_ID"),
+			os.Getenv("TOGGL_WORKSPACE_ID"),
+			since,
+			until,
+		)
+	} else if importStrategy == "clockify_to_jira" {
+		records, err = clockify.ExportWorkLogs(
+			os.Getenv("CLOCKIFY_API_TOKEN"),
+			os.Getenv("CLOCKIFY_USER_ID"),
+			os.Getenv("CLOCKIFY_PROJECT_ID"),
+			os.Getenv("CLOCKIFY_WORKSPACE_ID"),
+			since,
+			until,
+		)
 	} else {
-		records, err = toggl.ExportWorkLogs(togglApiToken, togglUserId, togglClientId, togglWorkspaceId, since, until)
+		fmt.Println("The given import strategy is not supported.")
+		return
 	}
 
 	tableWriter := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
@@ -113,35 +137,42 @@ func main() {
 		}
 	}
 
+	factory := converter.NewConverterFactory()
+	supportedConverter, err := factory.GetConverter(importStrategy)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	for recordNo, record := range records {
 		// Skip headers
 		if recordNo == 0 {
 			continue
 		}
 
-		description := record[5]
-		durationString := record[11]
-
-		startedAtDateTime, err := toggl.ConvertDateFormat(record[7] + " " + record[8])
+		convertedRecord, err := supportedConverter.Convert(record)
 		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
+			fmt.Println(err)
 			continue
 		}
 
-		issueIdOrKey, contentText, err := toggl.ConvertToIssueIdAndContextText(description, descriptionRegex)
-		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
-			continue
-		}
-
-		timeSpentSeconds, err := toggl.ConvertToSeconds(durationString)
-		if err != nil {
-			fmt.Println(fmt.Sprintln(err))
-			continue
-		}
-
-		jira.ImportWorkLog(atlassianDomain, atlassianEmail, atlassianApiToken, issueIdOrKey, contentText, startedAtDateTime, timeSpentSeconds, recordNo)
+		jira.ImportWorkLog(
+			atlassianDomain,
+			atlassianEmail,
+			atlassianApiToken,
+			convertedRecord.IssueIdOrKey,
+			convertedRecord.ContentText,
+			convertedRecord.StartedAtDateTime,
+			convertedRecord.TimeSpentSeconds,
+			recordNo,
+		)
 	}
 
 	tableWriter.Flush()
+}
+
+func checkDateFormat(date string) bool {
+	_, err := time.Parse("2006-01-02", date)
+
+	return err == nil
 }
