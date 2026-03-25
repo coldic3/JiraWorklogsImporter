@@ -74,6 +74,10 @@ descriptions: `XYZ-8 (resolving conflicts in the PR)`, `XYZ-8`.\
 If you are not going to follow this pattern, worry not! You can replace the regex with your own with `DESCRIPTION_REGEX`
 env variable.
 
+**Clockify task shortcut:** If a time entry in Clockify has a task assigned, the task name is used directly as the Jira
+issue key (e.g. `XYZ-8`) and the entry description becomes the work log comment — no regex parsing needed. If no task
+is assigned, the description is parsed as usual.
+
 ## Troubleshooting
 
 ### Where can I find these user, client and workspace IDs in Toggl?
