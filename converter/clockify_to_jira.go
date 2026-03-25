@@ -14,14 +14,15 @@ func (c *ClockifyToJiraConverter) Convert(record []string) (ConvertedRecord, err
 		descriptionRegex = `^(.*?)\s*(?:\((.*?)\))?$`
 	}
 
-	description := record[0]
+	taskName := record[0]
+	description := record[1]
 
-	startTime, err := time.Parse("2006-01-02 15:04:05", record[1])
+	startTime, err := time.Parse("2006-01-02 15:04:05", record[2])
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	endTime, err := time.Parse("2006-01-02 15:04:05", record[2])
+	endTime, err := time.Parse("2006-01-02 15:04:05", record[3])
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
@@ -29,14 +30,20 @@ func (c *ClockifyToJiraConverter) Convert(record []string) (ConvertedRecord, err
 	duration := endTime.Sub(startTime)
 	durationString := fmt.Sprintf("%02d:%02d:%02d", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60)
 
-	startedAtDateTime, err := ConvertDateFormat(record[1])
+	startedAtDateTime, err := ConvertDateFormat(record[2])
 	if err != nil {
 		return ConvertedRecord{}, err
 	}
 
-	issueIdOrKey, contentText, err := ConvertToIssueIdAndContextText(description, descriptionRegex)
-	if err != nil {
-		return ConvertedRecord{}, err
+	var issueIdOrKey, contentText string
+	if taskName != "" {
+		issueIdOrKey = taskName
+		contentText = description
+	} else {
+		issueIdOrKey, contentText, err = ConvertToIssueIdAndContextText(description, descriptionRegex)
+		if err != nil {
+			return ConvertedRecord{}, err
+		}
 	}
 
 	timeSpentSeconds, err := ConvertToSeconds(durationString)
